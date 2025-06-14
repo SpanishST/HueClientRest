@@ -3,3 +3,4 @@ env
 dev
 build
 *.egg-info
+__pycache__
