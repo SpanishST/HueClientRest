@@ -4,6 +4,7 @@ import csv
 import json
 import requests
 import urllib3
+from urllib.parse import quote
 from typing import List, Optional, Dict, Any
 
 class HueClientREST:
@@ -292,8 +293,7 @@ class HueClientREST:
             local_filename = os.path.basename(file_path)
         
         # Encode the path for URL
-        from urllib.parse import quote
-        encoded_path = quote(file_path, safe='')
+        encoded_path = quote(file_path, safe='') 
         
         url = f"{self.host}/api/v1/storage/download={encoded_path}"
         
@@ -395,3 +395,40 @@ class HueClientREST:
             if "404" in str(e) or "not found" in str(e).lower():
                 return False
             raise  # Re-raise if it's a different kind of error
+
+    def upload_file(self, dest_path: str, file_path: str):
+        """
+        Upload a file to the hdfs filesystem
+        Args: 
+            dest_path (str): The distant directory 
+            file_path (str): file path to upload
+        Returns : 
+            dict: json response
+        """
+        
+        # Fix the URL parameter format
+        encoded_path = quote(dest_path, safe='')
+        url = f"{self.host}/api/v1/storage/upload/file?dest={encoded_path}"  # Added missing =
+        
+        filename = os.path.basename(file_path)  # Use filename, not full path
+        
+        with open(file_path, 'rb') as f:
+            # Proper file tuple format: (filename, file_object, content_type)
+            files = {'hdfs_file': (filename, f, 'application/octet-stream')}
+            data = {'fileFieldName': 'hdfs_file'}  # Often required
+            
+            print('Uploading file...')
+            response = self.session.post(url, files=files, data=data)
+            
+            print(f"Status: {response.status_code}")
+            
+            if response.status_code != 200:
+                raise RuntimeError(f"Upload failed: {response.status_code} - {response.text}")
+            
+            result = response.json()
+            if result.get("status") == -1:
+                raise RuntimeError(f"Upload failed: {result.get('data')}")
+
+            print("File uploaded successfully")
+            
+            return result

@@ -20,7 +20,7 @@ pip install requests urllib3
 ## Quick Start
 
 ```python
-from hueclientrest.core import HueClientREST
+from hueclientrest import HueClientREST
 
 # Initialize the client
 client = HueClientREST(
@@ -43,7 +43,7 @@ client.run(
 ### Basic Query Execution
 
 ```python
-from hueclientrest.core import HueClientREST
+from hueclientrest import HueClientREST
 
 client = HueClientREST(
     host="https://your-hue-server.com",
@@ -101,6 +101,10 @@ downloaded_files = client.download_directory_files(
     local_dir="./downloads",
     file_pattern="part-"  # Only download files containing "part-"
 )
+
+# Upload file
+response = client.upload('/user/uploads', '.import.csv')
+
 ```
 
 ### Export Query Results to Files
@@ -174,7 +178,7 @@ client = HueClientREST(
 ### Error Handling
 
 ```python
-from hueclientrest.core import HueClientREST
+from hueclientrest import HueClientREST
 
 client = HueClientREST(
     host="https://your-hue-server.com",

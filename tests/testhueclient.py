@@ -273,6 +273,90 @@ class TestHueClientREST(unittest.TestCase):
         
         self.assertFalse(result)
 
+    @patch('builtins.open', new_callable=mock_open, read_data=b'test file content')
+    @patch('os.path.basename')
+    @patch('requests.Session.post')
+    @patch('builtins.print')  # Mock print to avoid cluttering test output
+    def test_upload_file_success(self, mock_print, mock_post, mock_basename, mock_file):
+        """Test successful file upload."""
+        # Setup mocks
+        mock_basename.return_value = "test.txt"
+        
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"status": 0, "message": "Upload successful"}
+        mock_post.return_value = mock_response
+        
+        # Execute
+        result = self.client.upload_file("/user/testuser/data/", "/local/test.txt")
+        
+        # Verify
+        self.assertEqual(result, {"status": 0, "message": "Upload successful"})
+        
+        # Verify URL construction (expect URL-encoded slashes)
+        expected_url = f"{self.host}/api/v1/storage/upload/file?dest=%2Fuser%2Ftestuser%2Fdata%2F"
+        mock_post.assert_called_once()
+        call_args = mock_post.call_args
+        self.assertEqual(call_args[0][0], expected_url)
+        
+        # Verify files parameter
+        files_param = call_args[1]['files']
+        self.assertIn('hdfs_file', files_param)
+        filename, file_obj, content_type = files_param['hdfs_file']
+        self.assertEqual(filename, "test.txt")
+        self.assertEqual(content_type, 'application/octet-stream')
+        
+        # Verify data parameter
+        data_param = call_args[1]['data']
+        self.assertEqual(data_param, {'fileFieldName': 'hdfs_file'})
+        
+        # Verify file operations
+        mock_file.assert_called_once_with("/local/test.txt", 'rb')
+        mock_basename.assert_called_once_with("/local/test.txt")
+
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.path.basename')
+    @patch('urllib.parse.quote')
+    @patch('requests.Session.post')
+    @patch('builtins.print')
+    def test_upload_file_http_error(self, mock_print, mock_post, mock_quote, mock_basename, mock_file):
+        """Test upload with HTTP error response."""
+        # Setup mocks
+        mock_basename.return_value = "test.txt"
+        mock_quote.return_value = "encoded_path"
+        
+        mock_response = Mock()
+        mock_response.status_code = 500
+        mock_response.text = "Internal Server Error"
+        mock_post.return_value = mock_response
+        
+        # Execute and verify exception
+        with self.assertRaises(RuntimeError) as context:
+            self.client.upload_file("/dest/path/", "/local/test.txt")
+        
+        self.assertIn("Upload failed: 500 - Internal Server Error", str(context.exception))
+        
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.path.basename')
+    @patch('urllib.parse.quote')
+    @patch('requests.Session.post')
+    @patch('builtins.print')
+    def test_upload_file_api_error(self, mock_print, mock_post, mock_quote, mock_basename, mock_file):
+        """Test upload with API-level error (status: -1)."""
+        # Setup mocks
+        mock_basename.return_value = "test.txt"
+        mock_quote.return_value = "encoded_path"
+        
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"status": -1, "data": "Permission denied"}
+        mock_post.return_value = mock_response
+        
+        # Execute and verify exception
+        with self.assertRaises(RuntimeError) as context:
+            self.client.upload_file("/dest/path/", "/local/test.txt")
+        
+        self.assertIn("Upload failed: Permission denied", str(context.exception))
 
 if __name__ == '__main__':
     # Run with: python -m pytest test_hue_client.py -v
