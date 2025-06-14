@@ -14,7 +14,7 @@ A Python REST client for interacting with Hadoop Hue's REST API. This client all
 ## Installation
 
 ```bash
-pip install requests urllib3
+pip install hueclientrest
 ```
 
 ## Quick Start
