@@ -266,7 +266,7 @@ Main client class for interacting with Hue REST API.
 - [`download_directory_files(directory_path, local_dir, file_pattern)`](src/hueclientrest/core.py): Download multiple files
 - [`run_and_download(statement, directory_path, local_dir, ...)`](src/hueclientrest/core.py): Execute and download results
 - [`check_directory_exists(directory_path)`](src/hueclientrest/core.py): Check if directory exists
-
+- [`upload_file(dest_path, file_path)`](src/hueclientrest/core.py): Upload a file to a directory
 ## Requirements
 
 - Python 3.7+
