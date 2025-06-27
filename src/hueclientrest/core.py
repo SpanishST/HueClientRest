@@ -46,7 +46,6 @@ class HueClientREST:
             raise RuntimeError("No token found.")
         
         self.session.headers.update({"Authorization": f"Bearer {self.token}"})
-        print("Authentication successful, token acquired.")
 
     def execute(self, statement: str, dialect: str = "hive") -> str:
         """
@@ -70,7 +69,6 @@ class HueClientREST:
         if not opid:
             raise RuntimeError(f"Échec execute: réponse inattendue : {js}")
         
-        print(f"Request done, operationId = {opid}")
         return opid
 
     def wait(self, operation_id: str, poll_interval: int = 2, timeout: int = 300):
@@ -89,24 +87,19 @@ class HueClientREST:
         url = f"{self.host}/api/v1/editor/check_status"
         waited = 0
 
-        print("Waiting for operation to complete...")
-
         while waited < timeout:
             r = self.session.post(url, data={"operationId": operation_id})
             r.raise_for_status()
             status = r.json().get("query_status", {}).get("status")
             
             if status == "available":
-                print("Request completed successfully and results are available.")
                 return
             elif status in {"running", "submitted", "starting", "waiting"}:
-                print(f"Status : {status}... waiting...")
                 time.sleep(poll_interval)
                 waited += poll_interval
             elif status in {"failed", "expired", "canceled"}:
                 raise RuntimeError(f"Request failed with status : {status}")
             else:
-                print(f"Unknown Statut : {status}... waiting...")
                 time.sleep(poll_interval)
                 waited += poll_interval
 
@@ -124,9 +117,7 @@ class HueClientREST:
             tuple[List[str], List[List]]: A tuple containing (headers, rows)
         """
         url = f"{self.host}/api/v1/editor/fetch_result_data"
-        
-        print("Fetching results...")
-        
+                
         all_rows = []
         headers = None
         start_row = 0
@@ -148,7 +139,6 @@ class HueClientREST:
             
             if status == -1:
                 if first_fetch:
-                    print(f"Results not ready yet, waiting {check_interval}s...")
                     time.sleep(check_interval)
                     continue
                 else:
@@ -167,7 +157,7 @@ class HueClientREST:
                 try:
                     rows = json.loads(raw_data)
                 except json.JSONDecodeError:
-                    # Essayer de diviser par lignes
+                    # try to divide per line
                     lines = raw_data.strip().split('\n')
                     if len(lines) > 1:
                         # Probable format CSV/TSV
@@ -199,7 +189,6 @@ class HueClientREST:
             
             if rows and len(rows) > 0:
                 all_rows.extend(rows)
-                print(f"{len(rows)} rows fetched (total: {len(all_rows)})")
             
             # check if there are more rows to fetch
             has_more = result.get("has_more", False) and len(rows) == batch_size
@@ -234,7 +223,6 @@ class HueClientREST:
                     writer.writerow([row])
         
         total_lines = len(rows) + (1 if headers else 0)
-        print(f"Saved {len(rows)} data rows" + (f" + 1 header row" if headers else "") + f" to {filename} (total: {total_lines} lines)")
 
     def run(self, statement: str, dialect: str = "hive", filename: str = "resultats.csv", batch_size: int = 1000):
         """
@@ -275,7 +263,6 @@ class HueClientREST:
         data = resp.json()
         files = data.get("files", [])
         
-        print(f"Found {len(files)} items in {directory_path}")
         return files
 
     def download_file(self, file_path: str, local_filename: Optional[str] = None) -> str:
@@ -311,7 +298,7 @@ class HueClientREST:
                     f.write(chunk)
         
         file_size = os.path.getsize(local_filename)
-        print(f"Downloaded {file_path} -> {local_filename} ({file_size} bytes)")
+
         return local_filename
 
     def download_directory_files(self, directory_path: str, local_dir: str = ".", file_pattern: Optional[str] = None) -> List[str]:
@@ -341,9 +328,7 @@ class HueClientREST:
                         downloaded_files.append(downloaded_file)
         
         if not downloaded_files:
-            print(f"No files found matching criteria in {directory_path}")
-        else:
-            print(f"Successfully downloaded {len(downloaded_files)} files to {local_dir}")
+            raise RuntimeError(f"No files found matching pattern '{file_pattern}' in directory '{directory_path}'")
         
         return downloaded_files
 
@@ -362,7 +347,6 @@ class HueClientREST:
         Returns:
             List[str]: List of local filenames that were downloaded.
         """
-        print(f"Executing statement: {statement}")
         
         # Authenticate if not already done
         if not self.token:
@@ -375,7 +359,6 @@ class HueClientREST:
         self.wait(opid, poll_interval=poll_interval, timeout=timeout)
         
         # Download the files
-        print(f"Downloading files from {directory_path} to {local_dir}")
         downloaded_files = self.download_directory_files(directory_path, local_dir, file_pattern)
         
         return downloaded_files
@@ -417,18 +400,13 @@ class HueClientREST:
             files = {'hdfs_file': (filename, f, 'application/octet-stream')}
             data = {'fileFieldName': 'hdfs_file'}  # Often required
             
-            print('Uploading file...')
             response = self.session.post(url, files=files, data=data)
-            
-            print(f"Status: {response.status_code}")
-            
+                        
             if response.status_code != 200:
                 raise RuntimeError(f"Upload failed: {response.status_code} - {response.text}")
             
             result = response.json()
             if result.get("status") == -1:
                 raise RuntimeError(f"Upload failed: {result.get('data')}")
-
-            print("File uploaded successfully")
             
             return result
