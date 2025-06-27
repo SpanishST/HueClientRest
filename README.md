@@ -1,7 +1,7 @@
 # HueClientRest
 
 A Python REST client for interacting with Hadoop Hue's REST API. This client allows you to execute SQL queries, manage files, and download results through Hue's web interface programmatically.
-With support of Quadient https://wwW.quadient.com
+With support of Quadient https://www.quadient.com
 
 ## Features
 
