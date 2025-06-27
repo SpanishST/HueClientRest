@@ -1,3 +1,3 @@
 from .core import HueClientREST
 
-___all__ = ["HueClientREST"]
+__all__ = ["HueClientREST"]
