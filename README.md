@@ -232,6 +232,14 @@ for query, filename in queries:
         print(f"Failed {filename}: {e}")
 ```
 
+## Unit tests
+
+```python
+
+python -m unittest
+
+```
+
 ## API Reference
 
 ### [`HueClientREST`](src/hueclientrest/core.py)
