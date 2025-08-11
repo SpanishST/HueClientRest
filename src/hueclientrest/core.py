@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import csv
 import json
@@ -47,7 +48,7 @@ class HueClientREST:
         
         self.session.headers.update({"Authorization": f"Bearer {self.token}"})
 
-    def execute(self, statement: str, dialect: str = "hive") -> str:
+    def execute(self, statement: str, dialect: str = "hive", clean_statement: bool = True) -> str:
         """
         Execute query and get operation ID (history_uuid)
         Raises:
@@ -60,7 +61,14 @@ class HueClientREST:
         """
         
         url = f"{self.host}/api/v1/editor/execute/{dialect}"
-        resp = self.session.post(url, data={"statement": statement})
+
+        clean_statement = statement.strip()
+        
+        if clean_statement:
+            clean_statement = re.sub(r'[\x00-\x1F]+', ' ', clean_statement)
+            clean_statement = re.sub(r'\s+', ' ', clean_statement)
+
+        resp = self.session.post(url, data={"statement": clean_statement})
         resp.raise_for_status()
         js = resp.json()
         
