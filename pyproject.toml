@@ -4,18 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hueclientrest"
-version = "0.2.0"
+version = "0.2.1"
 authors = [
     {name = "Ramon LOPEZ", email = "ramon.lopez@outlook.fr"},
 ]
 description = "A Python REST client for interacting with Hadoop Hue's REST API"
 readme = "README.md"
-license = {text = "GPL-3.0"}
+license = "GPL-3.0-or-later"
 requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
